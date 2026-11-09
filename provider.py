@@ -206,11 +206,14 @@ class MementoProvider(MemoryProvider):
             self._hindsight.close()
 
     def _build_retain_kwargs(self, content: str) -> dict[str, Any]:
+        context = "conversation between Hermes Agent and the User"
+        if self._agent_identity != "default":
+            context = f"conversation between {self._agent_identity} (Agent) and the User"
         return {
             "bank_id": self._bank_id,
             "content": content,
             "timestamp": _event_timestamp(),
-            "context": "conversation between Merlin (Agent) and the User",
+            "context": context,
             "document_id": self._document_id,
             "metadata": self._build_metadata(),
             "update_mode": "append",
