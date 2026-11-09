@@ -15,6 +15,3 @@ line-length = 119
 
 [tool.ruff.lint]
 ignore = ["N999"]
-
-[project.optional-dependencies]
-dev = ["ruff>=0.17.4"]
