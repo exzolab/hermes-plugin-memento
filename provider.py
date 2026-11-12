@@ -345,5 +345,11 @@ class MementoProvider(MemoryProvider):
                 ),
             )
         )
-        logger.info("response: type: %s", (type(response), response))
-        return tool_result({"result": response})
+        return tool_result(
+            {
+                "result": {
+                    "id": response.get("id", memory_id),
+                    "text": response.get("text", "<changed>"),
+                }
+            }
+        )
