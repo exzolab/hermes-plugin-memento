@@ -153,6 +153,8 @@ class MementoProvider(MemoryProvider):
         self._platform: str = kwargs.get("platform", "tui")
         self._user_id: str | None = kwargs.get("user_id")
         self._user_name: str | None = kwargs.get("user_name")
+        if self._user_name:
+            self._user_name = self._user_name.split(maxsplit=1)[0]
         self._chat_id: str | None = kwargs.get("chat_id")
         self._agent_identity: str | None = kwargs.get("agent_identity")
         if config.agent_id:
