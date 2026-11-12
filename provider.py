@@ -28,13 +28,26 @@ _META_ATTRS = (
 
 _RECALL_TOOL_SCHEMA: dict[str, Any] = {
     "name": "memento_recall",
-    "description": ("Search the user's memories by meaning; returns facts ranked by relevance."),
+    "description": "Search the user's memories by meaning; returns facts ranked by relevance.",
     "parameters": {
         "type": "object",
         "properties": {
             "query": {"type": "string", "description": "What to search for."},
         },
         "required": ["query"],
+    },
+}
+
+_REFLECT_TOOL_SCHEMA: dict[str, Any] = {
+    "name": "memento_reflect",
+    "description": (
+        "Synthesize a reasoned answer from long-term memory. "
+        "Reasons across stored memories to produce a coherent response."
+    ),
+    "parameters": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {"query": {"type": "string", "description": "The question to reflect on."}},
     },
 }
 
@@ -88,17 +101,23 @@ _SYSTEM_PROMPT_BLOCK: str = """
 # Persistent memory
 You have a persistent memory system (Memento) that retains facts about the user across conversations.
 
+Judge which tool fits the need:
+
+- **memento_recall** - fast: semantic search, keyword matching, entity graph traversal, and reranking.
+- **memento_reflect** - slow: reasons across stored memories to produce a coherent, synthesized answer. \
+Use it ONLY when the question needs synthesis or judgment over history rather than lookup of specific facts.
+Do not invent memories — if nothing relevant is returned, say so.
+
 **For normal conversation:**
 Before answering anything that depends on prior context (preferences, history, people, projects, \
-routines, or earlier decisions), use **memento_recall**. Prefer it over assumptions or the current \
-chat history alone. Do not invent memories — if nothing relevant is returned, say so.
+routines, or earlier decisions), use **memento_recall** or **memento_reflect**. \
+Do not invent memories — if nothing relevant is returned, say so.
 
 **Do not use memento_list or memento_patch during ordinary conversation.**
 These tools are reserved for the dreaming process (consolidation and cleanup) \
 or when the user explicitly asks you to list, inspect, invalidate, or edit memories.
 
-Memory is the source of truth for long-term user context. \
-Check it with recall before responding on user-specific topics.
+Memory is the source of truth for long-term user context. Check it before responding on user-specific topics.
 """
 
 type ToolHandler = Callable[[dict[str, Any]], str]
@@ -136,6 +155,8 @@ class MementoProvider(MemoryProvider):
         self._user_name: str | None = kwargs.get("user_name")
         self._chat_id: str | None = kwargs.get("chat_id")
         self._agent_identity: str | None = kwargs.get("agent_identity")
+        if config.agent_id:
+            self._agent_identity = config.agent_id
         self._document_id: str = _make_document_id(session_id)
         self._bank_id: str = config.bank_id
         self._recall_n: int = config.recall_n
@@ -143,6 +164,7 @@ class MementoProvider(MemoryProvider):
         self._worker_thread: Thread | None = None
         self._tool_handlers: dict[str, tuple[ToolHandler, str]] = {
             "memento_recall": (self._tool_recall, "Failed to recall memories"),
+            "memento_reflect": (self._tool_reflect, "Failed to reflect memories"),
             "memento_list": (self._tool_list, "Failed to list memories"),
             "memento_patch": (self._tool_patch, "Failed to patch memory"),
         }
@@ -178,7 +200,12 @@ class MementoProvider(MemoryProvider):
         self._enqueue(_retain_job)
 
     def get_tool_schemas(self) -> list[dict[str, Any]]:
-        return [_RECALL_TOOL_SCHEMA, _LIST_TOOL_SCHEMA, _PATCH_TOOL_SCHEMA]
+        return [
+            _RECALL_TOOL_SCHEMA,
+            _REFLECT_TOOL_SCHEMA,
+            _LIST_TOOL_SCHEMA,
+            _PATCH_TOOL_SCHEMA,
+        ]
 
     def handle_tool_call(self, tool_name: str, args: dict[str, Any], **kwargs) -> str:
         if not tool_name in self._tool_handlers:
@@ -263,6 +290,22 @@ class MementoProvider(MemoryProvider):
         records = [r.text for r in response.results][: self._recall_n]
         return tool_result({"result": records})
 
+    def _tool_reflect(self, args: dict[str, Any]) -> str:
+        if "query" not in args:
+            raise KeyError("reflect: missing 'query'")
+        query = str(args["query"]).strip()
+        if not query:
+            raise ValueError("reflect: 'query' is empty")
+        response = run_sync(
+            self._hindsight.areflect(
+                bank_id=self._bank_id,
+                query=query,
+                fact_types=["observation"],
+                exclude_mental_models=True,
+            )
+        )
+        return tool_result({"result": {"text": response.text}})
+
     def _tool_list(self, args: dict[str, Any]) -> str:
         response = run_sync(
             self._hindsight.alist_memories(
@@ -279,6 +322,7 @@ class MementoProvider(MemoryProvider):
                 "id": item.id,
                 "text": item.text,
                 "proof_count": item.proof_count,
+                "mentioned_at": item.mentioned_at,
             }
             for item in response.items
         ]
@@ -301,5 +345,5 @@ class MementoProvider(MemoryProvider):
                 ),
             )
         )
-        logger.info("_tool_patch: %s", response)
-        return tool_result({"result": ""})
+        logger.info("response: type: %s", (type(response), response))
+        return tool_result({"result": response})

@@ -1,5 +1,5 @@
 ---
 name: memento
-version: 0.1.0
+version: 0.1.2
 description: "Memento — Hermes Agent memory plugin"
 pip_dependencies: []
