@@ -162,6 +162,7 @@ class MementoProvider(MemoryProvider):
         self._document_id: str = _make_document_id(session_id)
         self._bank_id: str = config.bank_id
         self._recall_n: int = config.recall_n
+        self._do_not_retain: set[str] = {p.strip() for p in config.do_not_retain.split(",") if p.strip()}
         self._worker_queue: Queue[Callable[[], None]] = Queue()
         self._worker_thread: Thread | None = None
         self._tool_handlers: dict[str, tuple[ToolHandler, str]] = {
@@ -186,6 +187,9 @@ class MementoProvider(MemoryProvider):
         messages: list[dict[str, Any]] | None = None,
         turn_author: dict[str, Any] | None = None,
     ) -> None:
+        if self._platform in self._do_not_retain:
+            return
+
         retain_kwargs = self._build_retain_kwargs(
             json.dumps(
                 [

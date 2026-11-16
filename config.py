@@ -11,7 +11,7 @@ CONFIG_SCHEMA: list[dict[str, Any]] = [
     {
         "key": "api_url",
         "description": "Endpoint URL",
-        "default": "http://hindsight:8888",
+        "default": "http://hindsight.home.arpa",
         "required": True,
     },
     {
@@ -29,6 +29,11 @@ CONFIG_SCHEMA: list[dict[str, Any]] = [
         "description": "Recall max N records",
         "default": 10,
     },
+    {
+        "key": "do_not_retain",
+        "description": "Do not retain (platforms, comma-separated)",
+        "default": "cron",
+    },
 ]
 
 
@@ -38,6 +43,7 @@ class MementoConfig(BaseModel):
     bank_id: str
     agent_id: str = "default"
     recall_n: int = 10
+    do_not_retain: str = "cron"
 
 
 def memento_config_path() -> Path:
