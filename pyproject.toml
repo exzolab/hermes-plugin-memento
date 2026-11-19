@@ -1,6 +1,6 @@
 [project]
 name = "hermes-plugin-memento"
-version = "0.1.5"
+version = "0.1.6"
 description = "Memento - Hermes Agent memory plugin"
 readme = "README.md"
 authors = [{ name = "Daniel Wyatt", email = "dw@exzo.net" }]

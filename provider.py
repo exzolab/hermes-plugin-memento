@@ -165,6 +165,7 @@ class MementoProvider(MemoryProvider):
         self._document_id: str = _make_document_id(session_id)
         self._bank_id: str = config.bank_id
         self._recall_n: int = config.recall_n
+        self._min_score: float = config.min_score
         self._do_not_retain: set[str] = {p.strip() for p in config.do_not_retain.split(",") if p.strip()}
         self._worker_queue: Queue[Callable[[], None]] = Queue()
         self._worker_thread: Thread | None = None
@@ -293,7 +294,7 @@ class MementoProvider(MemoryProvider):
                 bank_id=self._bank_id,
                 query=query,
                 types=["observation"],
-                min_scores={"final": 0.5},
+                min_scores={"final": self._min_score},
             )
         )
         records = [r.text for r in response.results][: self._recall_n]

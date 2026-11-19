@@ -11,13 +11,14 @@ CONFIG_SCHEMA: list[dict[str, Any]] = [
     {
         "key": "api_url",
         "description": "Hindsight API URL",
-        "default": "http://hindsight.home.arpa",
+        "default": "http://hindsight:8888",
         "required": True,
     },
     {
         "key": "api_key",
         "description": "Hindsight API Key (optional)",
-        "default": "",
+        "env_var": "MEMENTO_API_KEY",
+        "secret": True,
     },
     {
         "key": "bank_id",
@@ -30,8 +31,13 @@ CONFIG_SCHEMA: list[dict[str, Any]] = [
         "description": "Default agent identity",
     },
     {
+        "key": "min_score",
+        "description": "Recall min score",
+        "default": 0.2,
+    },
+    {
         "key": "recall_n",
-        "description": "Recall max N records",
+        "description": "Recall N records",
         "default": 10,
     },
     {
@@ -48,6 +54,7 @@ class MementoConfig(BaseModel):
     bank_id: str
     api_key: str = ""
     agent_id: str = "default"
+    min_score: float = 0.2
     recall_n: int = 10
     do_not_retain: str = "cron"
 
