@@ -8,6 +8,7 @@ from threading import Thread
 from typing import Any
 
 from agent.memory_provider import MemoryProvider, spawn_context_thread
+from agent.secret_scope import get_secret
 from hermes_time import now as hermes_now
 from hindsight_client import Hindsight
 from hindsight_client_api.models import UpdateMemoryRequest
@@ -150,7 +151,7 @@ class MementoProvider(MemoryProvider):
         config = memento_load_config()
         self._hindsight = Hindsight(
             base_url=config.api_url,
-            api_key=config.api_key or None,
+            api_key=config.api_key or get_secret("MEMENTO_API_KEY"),
         )
         self._session_id: str = session_id
         self._platform: str = kwargs.get("platform", "tui")
