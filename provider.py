@@ -148,7 +148,10 @@ class MementoProvider(MemoryProvider):
 
     def initialize(self, session_id: str, **kwargs) -> None:
         config = memento_load_config()
-        self._hindsight = Hindsight(base_url=config.api_url)
+        self._hindsight = Hindsight(
+            base_url=config.api_url,
+            api_key=config.api_key or None,
+        )
         self._session_id: str = session_id
         self._platform: str = kwargs.get("platform", "tui")
         self._user_id: str | None = kwargs.get("user_id")

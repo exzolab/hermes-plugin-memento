@@ -10,9 +10,14 @@ CONFIG_FILE_NAME = "config.json"
 CONFIG_SCHEMA: list[dict[str, Any]] = [
     {
         "key": "api_url",
-        "description": "Endpoint URL",
+        "description": "Hindsight API URL",
         "default": "http://hindsight.home.arpa",
         "required": True,
+    },
+    {
+        "key": "api_key",
+        "description": "Hindsight API Key (optional)",
+        "default": "",
     },
     {
         "key": "bank_id",
@@ -41,6 +46,7 @@ class MementoConfig(BaseModel):
     model_config = ConfigDict()
     api_url: str
     bank_id: str
+    api_key: str = ""
     agent_id: str = "default"
     recall_n: int = 10
     do_not_retain: str = "cron"
